@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Logs
+/logs/
+
+# idea
+/.idea/
+
+#config
+/config.json
