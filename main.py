@@ -1,13 +1,20 @@
-import datetime
+import os
 import re
+import sys
 import interactions
 import json
 import logger
 from Event import *
 from interactions.ext.tasks import IntervalTrigger, create_task
 
-with open('config.json', 'r') as file:
-    config = json.load(file)
+if os.path.isfile('config.json'):
+    with open('config.json', 'r') as file:
+        config = json.load(file)
+else:
+    file = open("config.json", 'w+')
+    file.write('{\n  "token": ""\n}')
+    print("Вставьте токен в сформированный config.json файл и перезапустите программу.")
+    sys.exit()
 
 bot = interactions.Client(
     token=config['token'],

@@ -1,4 +1,8 @@
 import datetime
+import os.path
+
+if not os.path.isdir("logs"):
+    os.mkdir("logs")
 log_path = f"logs\\log-{str(datetime.datetime.now()).replace(':', '.')[:-7]}.txt"
 log_file = open(log_path, "w+")
 log_file.write(f"Start log {str(datetime.datetime.now())[:-7]}\n")
