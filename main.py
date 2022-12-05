@@ -23,8 +23,6 @@ bot = interactions.Client(
 users = dict()
 events = []
 
-# user = await bot.guilds[0].get_member(id)
-
 
 @bot.command(
     name="create_meeting",
@@ -69,15 +67,8 @@ async def create_meeting(ctx: interactions.CommandContext):
             custom_id="people_count",
             required=True,
             max_length=1,
-        )# interactions.TextInput(
-        #    style=interactions.TextStyleType.PARAGRAPH,
-        #    label="Роли",
-        #    custom_id="roles",
-        #    required=True,
-        #    placeholder=f"Введите роли через {config['separator']}",
-        #    max_length=100,
-        #)
-        ]
+        )
+    ]
     )
     await ctx.popup(modal)
     logger.default_log("Meeting creating complete")
@@ -322,19 +313,6 @@ async def response(ctx: interactions.CommandContext):
 @create_task(IntervalTrigger(60))
 async def main_loop():
     await events_handler()
-
-
-#for i in range(10):
-#    @bot.component(f"event_button{i}")
-#    async def prime_response(ctx: interactions.CommandContext):
-#        print(f"Button {i} used!")
-#        if ctx.user.username in ctx.message.embeds[0].fields[3 + i].value:
-#            embed = ctx.message.embeds[0]
-#            embed.fields[3 + i].value = embed.fields[3 + i].value.replace(ctx.user.username, '')
-#        else:
-#            embed = ctx.message.embeds[0]
-#            embed.fields[3 + i].value += " " + ctx.user.username
-#        await ctx.message.edit(embeds=embed, components=ctx.message.components)
 
 
 @bot.event
