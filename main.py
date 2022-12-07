@@ -67,15 +67,16 @@ async def create_meeting(ctx: interactions.CommandContext):
             custom_id="people_count",
             required=True,
             max_length=1,
-        )
-    ]
+        ),
+        ]
     )
     await ctx.popup(modal)
     logger.default_log("Meeting creating complete")
 
 
 @bot.modal("create_form")
-async def create_response(ctx: interactions.CommandContext, meet_name: str, meet_description: str, meet_time: str, meet_date: str, people_count: str):
+async def create_response(ctx: interactions.CommandContext, meet_name: str, meet_description: str, meet_time: str,
+                          meet_date: str, people_count: str):
     logger.default_log("Initiate meeting modal creating")
     if re.fullmatch(r"\d\d:\d\d", meet_time) is None:
         logger.default_log("Input error: Bad time")
@@ -146,7 +147,8 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
     embed = interactions.Embed(
         title="----------Мероприятие----------",
         author=interactions.EmbedAuthor(
-            name="Лидер: " + ctx.member.name + " ID: " + str(ctx.user.id)
+            # name="Лидер: " + ctx.member.name + " ID: " + str(ctx.user.id)
+            name="Лидер: " + ctx.member.name
         ),
         color=15548997,
         fields=embed_fields,
@@ -155,11 +157,13 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         ),
     )
     logger.default_log("Modal created")
-    await ctx.send(embeds=embed, components=row)
+    await ctx.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
     logger.default_log("Modal sent")
     sep_datetime = meet_date.split('.')
     sep_datetime += meet_time.split(':')
-    events.append(Event(ctx.message.id, datetime.datetime(day=int(sep_datetime[0]), month=int(sep_datetime[1]), year=int(sep_datetime[2]), hour=int(sep_datetime[3]), minute=int(sep_datetime[4])), meet_name))
+    events.append(Event(ctx.message.id, datetime.datetime(day=int(sep_datetime[0]), month=int(sep_datetime[1]),
+                                                          year=int(sep_datetime[2]), hour=int(sep_datetime[3]),
+                                                          minute=int(sep_datetime[4])), meet_name, ctx.channel))
     logger.default_log("Meeting created")
 
 
@@ -168,18 +172,30 @@ async def events_handler():
     now = datetime.datetime.now()
     for event in events:
         if event.datetime.year == now.year and event.datetime.month == now.month and event.datetime.day == now.day:
-            if event.datetime.hour == (now + datetime.timedelta(minutes=30)).hour and event.datetime.minute == (now + datetime.timedelta(minutes=30)).minute:
+            if event.datetime.hour == (now + datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
+                    now + datetime.timedelta(minutes=30)).minute:
                 for user in event.members:
-                    await user.send(f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. Оно начинается через 30 минут!")
-            elif event.datetime.hour == (now + datetime.timedelta(minutes=15)).hour and event.datetime.minute == (now + datetime.timedelta(minutes=15)).minute:
+                    await user.send(
+                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
+                        "Оно начинается через 30 минут!")
+            elif event.datetime.hour == (now + datetime.timedelta(minutes=15)).hour and event.datetime.minute == (
+                    now + datetime.timedelta(minutes=15)).minute:
                 for user in event.members:
-                    await user.send(f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. Оно начинается через 15 минут!")
-            elif event.datetime.hour == (now + datetime.timedelta(minutes=5)).hour and event.datetime.minute == (now + datetime.timedelta(minutes=5)).minute:
+                    await user.send(
+                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
+                        "Оно начинается через 15 минут!")
+            elif event.datetime.hour == (now + datetime.timedelta(minutes=5)).hour and event.datetime.minute == (
+                    now + datetime.timedelta(minutes=5)).minute:
                 for user in event.members:
-                    await user.send(f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. Оно начинается через 5 минут!")
-        elif now > event.datetime:
-            events.remove(event)
-            logger.default_log(f"Event {event.name}:{event.id} deleted")
+                    await user.send(
+                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
+                        "Оно начинается через 5 минут!")
+            elif event.datetime.hour == (now - datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
+                    now - datetime.timedelta(minutes=30)).minute:
+                message = await event.channel.get_message(event.id)
+                await message.delete("Times out")
+                events.remove(event)
+                logger.default_log(f"Event {event.name}:{event.id} deleted")
     logger.default_log("Meetings time check ended")
 
 
@@ -203,7 +219,8 @@ def member_activity(ctx: interactions.CommandContext, field_number: int):
             if event.id == ctx.message.id:
                 print("Member added to event")
                 event.members.append(ctx.user)
-    elif nick_user in embed.fields[field_number].value.split(",") or nick_user == embed.fields[field_number].value[1:-1]:
+    elif nick_user in embed.fields[field_number].value.split(",") or nick_user == embed.fields[field_number].value[
+                                                                                  1:-1]:
         embed.fields[field_number].value = embed.fields[field_number].value.replace(nick_user + ",", '')
         embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
         for event in events:
@@ -258,7 +275,8 @@ def secondary_activity(ctx: interactions.CommandContext, field_number: int):
         logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
     else:
         footer_text[field_number] += ctx.member.name + ","
-        if nick_user in (embed.fields[5].value[1:] + 'a').split(',') + (embed.fields[6].value[1:] + 'a').split(',') + (embed.fields[7].value[1:] + 'a').split(','):
+        if nick_user in (embed.fields[5].value[1:] + 'a').split(',') + (embed.fields[6].value[1:] + 'a').split(',') + (
+                embed.fields[7].value[1:] + 'a').split(','):
             embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
             embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
             embed.fields[7].value = embed.fields[7].value.replace(nick_user + ",", '')
@@ -319,5 +337,6 @@ async def main_loop():
 async def on_ready():
     logger.default_log(f"Bot logged as {bot.me.name}")
     main_loop.start()
+
 
 bot.start()
