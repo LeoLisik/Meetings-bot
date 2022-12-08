@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 import sys
@@ -169,7 +170,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
 
 async def events_handler():
     logger.default_log("Meetings time check started")
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3, minutes=0)
     for event in events:
         if event.datetime.year == now.year and event.datetime.month == now.month and event.datetime.day == now.day:
             if event.datetime.hour == (now + datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
