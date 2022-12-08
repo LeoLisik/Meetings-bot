@@ -164,7 +164,8 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
     sep_datetime += meet_time.split(':')
     events.append(Event(ctx.message.id, datetime.datetime(day=int(sep_datetime[0]), month=int(sep_datetime[1]),
                                                           year=int(sep_datetime[2]), hour=int(sep_datetime[3]),
-                                                          minute=int(sep_datetime[4])), meet_name, ctx.channel))
+                                                          minute=int(sep_datetime[4])), meet_name, ctx.channel,
+                                                          ctx.message.url))
     logger.default_log("Meeting created")
 
 
@@ -173,24 +174,31 @@ async def events_handler():
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3, minutes=0)
     for event in events:
         if event.datetime.year == now.year and event.datetime.month == now.month and event.datetime.day == now.day:
+            # TODO: Normal design message
+            embed = interactions.Embed(
+                fields=[interactions.EmbedField(
+                    name=event.name,
+                    value=f"[Перейти]({event.url})",
+                )]
+            )
             if event.datetime.hour == (now + datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=30)).minute:
                 for user in event.members:
                     await user.send(
-                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
-                        "Оно начинается через 30 минут!")
+                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
+                        "Оно начинается через 30 минут!", embeds=embed)
             elif event.datetime.hour == (now + datetime.timedelta(minutes=15)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=15)).minute:
                 for user in event.members:
                     await user.send(
-                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
-                        "Оно начинается через 15 минут!")
+                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
+                        "Оно начинается через 15 минут!", embeds=embed)
             elif event.datetime.hour == (now + datetime.timedelta(minutes=5)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=5)).minute:
                 for user in event.members:
                     await user.send(
-                        f"Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. "
-                        "Оно начинается через 5 минут!")
+                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
+                        "Оно начинается через 5 минут!", embeds=embed)
             elif event.datetime.hour == (now - datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
                     now - datetime.timedelta(minutes=30)).minute:
                 message = await event.channel.get_message(event.id)
