@@ -150,6 +150,11 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
             # name="Лидер: " + ctx.member.name + " ID: " + str(ctx.user.id)
             name="Лидер: " + ctx.member.name
         ),
+        image=interactions.EmbedImageStruct(
+            url="https://www.englishdom.com/dynamicus/blog-post/000/002/090/1595412346_content_700x455.jpg?1595412347101",
+            height=300,
+            width=250,
+        ),
         color=15548997,
         fields=embed_fields,
         footer=interactions.EmbedFooter(
