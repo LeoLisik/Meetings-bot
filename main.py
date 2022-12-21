@@ -22,15 +22,25 @@ bot = interactions.Client(
 
 users = dict()
 events = []
+temp_data = {}
 
 
 @bot.command(
     name="create_meeting",
     description="Create new meeting",
     default_scope=False,
+    options=[
+        interactions.Option(
+            name="people",
+            description="Amount of people",
+            type=interactions.OptionType.INTEGER,
+            required=False,
+        )
+    ]
 )
-async def create_meeting(ctx: interactions.CommandContext):
+async def create_meeting(ctx: interactions.CommandContext, people=6):
     logger.default_log("Initiate meeting creating")
+    temp_data['people' + str(ctx.user.id)] = people
     modal = interactions.Modal(
         title="Создание мероприятия",
         custom_id="create_form",
@@ -63,10 +73,9 @@ async def create_meeting(ctx: interactions.CommandContext):
             max_length=10,
         ), interactions.TextInput(
             style=interactions.TextStyleType.SHORT,
-            label="Максимальное кол-во участников",
-            custom_id="people_count",
-            required=True,
-            max_length=1,
+            label="URL картинки",
+            custom_id="meeting_image",
+            required=False,
         ),
         ]
     )
@@ -76,8 +85,9 @@ async def create_meeting(ctx: interactions.CommandContext):
 
 @bot.modal("create_form")
 async def create_response(ctx: interactions.CommandContext, meet_name: str, meet_description: str, meet_time: str,
-                          meet_date: str, people_count: str):
+                          meet_date: str, meet_image: str):
     logger.default_log("Initiate meeting modal creating")
+    people_count = temp_data.pop('people' + str(ctx.user.id))
     if re.fullmatch(r"\d\d:\d\d", meet_time) is None:
         logger.default_log("Input error: Bad time")
         await ctx.send(":no_entry:ОШИБКА: Неправильный ввод времени. Пример: 15:01", ephemeral=True)
@@ -85,10 +95,6 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
     if re.fullmatch(r"\d\d\.\d\d\.\d{4}", meet_date) is None:
         logger.default_log("Input error: Bad date")
         await ctx.send(":no_entry:ОШИБКА: Неправильный ввод даты. Пример: 01.01.1960", ephemeral=True)
-        return
-    if not people_count.isdigit():
-        logger.default_log("Input error: Bad count users")
-        await ctx.send(":no_entry:ОШИБКА: Неправильный ввод числа участников. Пример: 6", ephemeral=True)
         return
     if meet_description == "":
         meet_description = "Описание отсутствует"
@@ -131,7 +137,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         inline=True,
     ), interactions.EmbedField(
         name="Люди",
-        value="0/" + people_count,
+        value="0/" + str(people_count),
         inline=True,
     ), interactions.EmbedField(
         name="Titan",
@@ -151,11 +157,11 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
             name="Лидер: " + ctx.member.name
         ),
         image=interactions.EmbedImageStruct(
-            url="https://www.englishdom.com/dynamicus/blog-post/000/002/090/1595412346_content_700x455.jpg?1595412347101",
+            url=meet_image,
             height=300,
             width=250,
         ),
-        color=15548997,
+        color=0xFFFFFF, #15548997
         fields=embed_fields,
         footer=interactions.EmbedFooter(
             text="Bench: -\n50/50: -",
