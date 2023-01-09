@@ -123,9 +123,6 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
     row = interactions.ActionRow(components=buttons)
 
     embed_fields = [interactions.EmbedField(
-        name="Название",
-        value=meet_name,
-    ), interactions.EmbedField(
         name="Описание",
         value=meet_description,
     ), interactions.EmbedField(
@@ -152,7 +149,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
     )]
 
     embed = interactions.Embed(
-        title="----------Мероприятие----------",
+        title=meet_name,
         author=interactions.EmbedAuthor(
             # name="Лидер: " + ctx.member.name + " ID: " + str(ctx.user.id)
             name="Лидер: " + ctx.member.name
@@ -162,7 +159,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
             height=300,
             width=250,
         ),
-        color=0xFFFFFF, #15548997
+        color=0x00FF00,
         fields=embed_fields,
         footer=interactions.EmbedFooter(
             text="Bench: -\n50/50: -",
