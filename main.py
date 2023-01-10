@@ -365,6 +365,10 @@ async def response(ctx: interactions.CommandContext):
     footer_text[0] = footer_text[0].replace(nick_user + ",", '')
     footer_text[1] = footer_text[1].replace(nick_user + ",", '')
     embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+    for event in events:
+        if event.id == ctx.message.id:
+            print("Member removed from event")
+            event.members.remove(ctx.user)
     await ctx.message.edit(embeds=embed, components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
