@@ -119,6 +119,10 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         style=interactions.ButtonStyle.SECONDARY,
         label="50/50",
         custom_id="Btn50/50",
+    ), interactions.Button(
+        style=interactions.ButtonStyle.SECONDARY,
+        label="Не пойду",
+        custom_id="BtnExit",
     )]
     row = interactions.ActionRow(components=buttons)
 
@@ -345,6 +349,23 @@ async def response(ctx: interactions.CommandContext):
 async def response(ctx: interactions.CommandContext):
     logger.default_log(f"50/50 pressed by {ctx.user.username}:{ctx.user.id}")
     await ctx.message.edit(embeds=secondary_activity(ctx, 1), components=ctx.message.components)
+    await ctx.send("Успешно", ephemeral=True)
+
+
+@bot.component("BtnExit")
+async def response(ctx: interactions.CommandContext):
+    logger.default_log(f"Exit pressed by {ctx.user.username}:{ctx.user.id}")
+    embed = ctx.message.embeds[0]
+    nick_user = users.get(ctx.user.id)
+    embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
+    embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
+    embed.fields[7].value = embed.fields[7].value.replace(nick_user + ",", '')
+    embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
+    footer_text = embed.footer.text.split('\n')
+    footer_text[0] = footer_text[0].replace(nick_user + ",", '')
+    footer_text[1] = footer_text[1].replace(nick_user + ",", '')
+    embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+    await ctx.message.edit(embeds=embed, components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
