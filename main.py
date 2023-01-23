@@ -113,12 +113,12 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         custom_id="BtnWarlock",
     ), interactions.Button(
         style=interactions.ButtonStyle.SECONDARY,
-        label="Late",
+        label="Опоздаю",
         custom_id="BtnLate",
     ), interactions.Button(
         style=interactions.ButtonStyle.SECONDARY,
-        label="50/50",
-        custom_id="Btn50/50",
+        label="Не пойду",
+        custom_id="BtnExit",
     )]
     row = interactions.ActionRow(components=buttons)
 
@@ -162,7 +162,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         color=0x00FF00,
         fields=embed_fields,
         footer=interactions.EmbedFooter(
-            text="Bench: -\n50/50: -",
+            text="Запасные: -\nОпоздают: -",
         ),
     )
     logger.default_log("Modal created")
@@ -247,9 +247,11 @@ def member_activity(ctx: interactions.CommandContext, field_number: int):
         logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
     else:
         if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]) and nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
-            footer_text = embed.footer.text.split('\n')
-            footer_text[0] += ctx.member.name + ", "
-            embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+            if nick_user not in embed.footer.text.split('\n')[0]:
+                footer_text = embed.footer.text.split('\n')
+                footer_text[1] = footer_text[1].replace(nick_user + ",", '')
+                footer_text[0] += ctx.member.name + ", "
+                embed.footer.text = footer_text[0] + "\n" + footer_text[1]
         else:
             if nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
                 embed.fields[3].value = str(int(embed.fields[3].value[0]) + 1) + embed.fields[3].value[1:]
@@ -334,14 +336,29 @@ async def response(ctx: interactions.CommandContext):
 @bot.component("BtnLate")
 async def response(ctx: interactions.CommandContext):
     logger.default_log(f"Late pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=secondary_activity(ctx, 0), components=ctx.message.components)
+    await ctx.message.edit(embeds=secondary_activity(ctx, 1), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
-@bot.component("Btn50/50")
+@bot.component("BtnExit")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"50/50 pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=secondary_activity(ctx, 1), components=ctx.message.components)
+    logger.default_log(f"Exit pressed by {ctx.user.username}:{ctx.user.id}")
+    embed = ctx.message.embeds[0]
+    nick_user = users.get(ctx.user.id)
+    embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
+    embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
+    embed.fields[7].value = embed.fields[7].value.replace(nick_user + ",", '')
+    if nick_user not in embed.footer.text:
+        embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
+    footer_text = embed.footer.text.split('\n')
+    footer_text[0] = footer_text[0].replace(nick_user + ",", '')
+    footer_text[1] = footer_text[1].replace(nick_user + ",", '')
+    embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+    for event in events:
+        if event.id == ctx.message.id:
+            print("Member removed from event")
+            event.members.remove(ctx.user)
+    await ctx.message.edit(embeds=embed, components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
