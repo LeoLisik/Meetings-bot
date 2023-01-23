@@ -219,17 +219,17 @@ async def events_handler():
 def member_activity(ctx: interactions.CommandContext, field_number: int):
     embed = ctx.message.embeds[0]
     nick_user = users.get(ctx.user.id)
-    fields = [5, 6, 7]
+    fields = [4, 5, 6]
     fields.remove(field_number)
     if nick_user is None:
         logger.default_log(f"User {ctx.user.id} not found")
-        if int(embed.fields[4].value[0]) == int(embed.fields[4].value[2]):
+        if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]):
             footer_text = embed.footer.text.split('\n')
             footer_text[0] += ctx.member.name + ", "
             embed.footer.text = footer_text[0] + "\n" + footer_text[1]
         else:
             embed.fields[field_number].value += ctx.member.name + ", "
-            embed.fields[4].value = str(int(embed.fields[4].value[0]) + 1) + embed.fields[4].value[1:]
+            embed.fields[3].value = str(int(embed.fields[3].value[0]) + 1) + embed.fields[3].value[1:]
         users[ctx.user.id] = ctx.member.name
         logger.default_log(f"User {ctx.user.id}: {ctx.member.name} created and subscribed")
         for event in events:
@@ -239,20 +239,20 @@ def member_activity(ctx: interactions.CommandContext, field_number: int):
     elif nick_user in embed.fields[field_number].value.split(",") or nick_user == embed.fields[field_number].value[
                                                                                   1:-1]:
         embed.fields[field_number].value = embed.fields[field_number].value.replace(nick_user + ",", '')
-        embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
+        embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
         for event in events:
             if event.id == ctx.message.id:
                 print("Member removed from event")
                 event.members.remove(ctx.user)
         logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
     else:
-        if int(embed.fields[4].value[0]) == int(embed.fields[4].value[2]) and nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
+        if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]) and nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
             footer_text = embed.footer.text.split('\n')
             footer_text[0] += ctx.member.name + ", "
             embed.footer.text = footer_text[0] + "\n" + footer_text[1]
         else:
             if nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
-                embed.fields[4].value = str(int(embed.fields[4].value[0]) + 1) + embed.fields[4].value[1:]
+                embed.fields[3].value = str(int(embed.fields[3].value[0]) + 1) + embed.fields[3].value[1:]
             embed.fields[field_number].value += ctx.member.name + ","
             embed.fields[fields[0]].value = embed.fields[fields[0]].value.replace(nick_user + ",", '')
             embed.fields[fields[1]].value = embed.fields[fields[1]].value.replace(nick_user + ",", '')
@@ -292,12 +292,12 @@ def secondary_activity(ctx: interactions.CommandContext, field_number: int):
         logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
     else:
         footer_text[field_number] += ctx.member.name + ","
-        if nick_user in (embed.fields[5].value[1:] + 'a').split(',') + (embed.fields[6].value[1:] + 'a').split(',') + (
-                embed.fields[7].value[1:] + 'a').split(','):
+        if nick_user in (embed.fields[4].value[1:] + 'a').split(',') + (embed.fields[5].value[1:] + 'a').split(',') + (
+                embed.fields[6].value[1:] + 'a').split(','):
+            embed.fields[4].value = embed.fields[4].value.replace(nick_user + ",", '')
             embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
             embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
-            embed.fields[7].value = embed.fields[7].value.replace(nick_user + ",", '')
-            embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
+            embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
         footer_text[1 - field_number] = footer_text[1 - field_number].replace(nick_user + ",", '')
         users[ctx.user.id] = ctx.member.name
         for event in events:
@@ -313,21 +313,21 @@ def secondary_activity(ctx: interactions.CommandContext, field_number: int):
 @bot.component("BtnTitan")
 async def response(ctx: interactions.CommandContext):
     logger.default_log(f"Titan pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=member_activity(ctx, 5), components=ctx.message.components)
+    await ctx.message.edit(embeds=member_activity(ctx, 4), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
 @bot.component("BtnHunter")
 async def response(ctx: interactions.CommandContext):
     logger.default_log(f"Hunter pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=member_activity(ctx, 6), components=ctx.message.components)
+    await ctx.message.edit(embeds=member_activity(ctx, 5), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
 @bot.component("BtnWarlock")
 async def response(ctx: interactions.CommandContext):
     logger.default_log(f"Warlock pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=member_activity(ctx, 7), components=ctx.message.components)
+    await ctx.message.edit(embeds=member_activity(ctx, 6), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
