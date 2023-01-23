@@ -345,11 +345,11 @@ async def response(ctx: interactions.CommandContext):
     logger.default_log(f"Exit pressed by {ctx.user.username}:{ctx.user.id}")
     embed = ctx.message.embeds[0]
     nick_user = users.get(ctx.user.id)
+    embed.fields[4].value = embed.fields[4].value.replace(nick_user + ",", '')
     embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
     embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
-    embed.fields[7].value = embed.fields[7].value.replace(nick_user + ",", '')
     if nick_user not in embed.footer.text:
-        embed.fields[4].value = str(int(embed.fields[4].value[0]) - 1) + embed.fields[4].value[1:]
+        embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
     footer_text = embed.footer.text.split('\n')
     footer_text[0] = footer_text[0].replace(nick_user + ",", '')
     footer_text[1] = footer_text[1].replace(nick_user + ",", '')
