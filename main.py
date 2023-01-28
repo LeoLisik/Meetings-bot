@@ -166,7 +166,8 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         ),
     )
     logger.default_log("Modal created")
-    await ctx.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
+    await ctx.channel.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
+    #await ctx.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
     logger.default_log("Modal sent")
     sep_datetime = meet_date.split('.')
     sep_datetime += meet_time.split(':')
