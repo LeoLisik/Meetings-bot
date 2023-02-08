@@ -1,8 +1,8 @@
-import datetime
+# import datetime
 import os
 import re
 import sys
-import interactions
+# import interactions
 import json
 import logger
 from Event import *
@@ -99,6 +99,9 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         return
     if meet_description == "":
         meet_description = "Описание отсутствует"
+    if meet_image == "":
+        meet_image = "https://media.discordapp.net/attachments/1042722965843869737/1069697552934522930/" \
+                     "PngItem_1015819.png?width=931&height=233"
     buttons = [interactions.Button(
         style=interactions.ButtonStyle.PRIMARY,
         label="Titan",
@@ -113,8 +116,8 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         custom_id="BtnWarlock",
     ), interactions.Button(
         style=interactions.ButtonStyle.SECONDARY,
-        label="Опоздаю",
-        custom_id="BtnLate",
+        label="В запас",
+        custom_id="BtnReserve",
     ), interactions.Button(
         style=interactions.ButtonStyle.SECONDARY,
         label="Не пойду",
@@ -152,29 +155,34 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
         title=meet_name,
         author=interactions.EmbedAuthor(
             # name="Лидер: " + ctx.member.name + " ID: " + str(ctx.user.id)
-            name="Лидер: " + ctx.member.name
+            name="Лидер: " + ctx.member.name,
+            icon_url=ctx.user.avatar_url
         ),
         image=interactions.EmbedImageStruct(
             url=meet_image,
             height=300,
             width=250,
         ),
+        thumbnail=interactions.EmbedImageStruct(
+            url="https://i.ibb.co/M6Lt2cF/logo.png",
+        ),
         color=0x00FF00,
         fields=embed_fields,
         footer=interactions.EmbedFooter(
-            text="Запасные: -\nОпоздают: -",
+            text="Запасные: -",
         ),
     )
     logger.default_log("Modal created")
-    await ctx.channel.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
-    #await ctx.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed, components=row)
+    message = await ctx.channel.send(content="@everyone", allowed_mentions={"parse": ["everyone"]}, embeds=embed,
+                                     components=row)
     logger.default_log("Modal sent")
     sep_datetime = meet_date.split('.')
     sep_datetime += meet_time.split(':')
-    events.append(Event(ctx.message.id, datetime.datetime(day=int(sep_datetime[0]), month=int(sep_datetime[1]),
-                                                          year=int(sep_datetime[2]), hour=int(sep_datetime[3]),
-                                                          minute=int(sep_datetime[4])), meet_name, ctx.channel,
-                                                          ctx.message.url))
+    events.append(Event(message.id, datetime.datetime(day=int(sep_datetime[0]), month=int(sep_datetime[1]),
+                                                      year=int(sep_datetime[2]), hour=int(sep_datetime[3]),
+                                                      minute=int(sep_datetime[4])), meet_name, ctx.channel,
+                        message.url))
+    await ctx.send("Сбор успешно создан", ephemeral=True)
     logger.default_log("Meeting created")
 
 
@@ -183,31 +191,29 @@ async def events_handler():
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3, minutes=0)
     for event in events:
         if event.datetime.year == now.year and event.datetime.month == now.month and event.datetime.day == now.day:
-            # TODO: Normal design message
             embed = interactions.Embed(
-                fields=[interactions.EmbedField(
-                    name=event.name,
-                    value=f"[Перейти]({event.url})",
-                )]
+                title="Оповещение",
+                color=0xAA00FF,
+                thumbnail=interactions.EmbedImageStruct(
+                    url="https://i.ibb.co/M6Lt2cF/logo.png",
+                ),
+                description=f"Вы записаны на событие: **```{event.name}```**\n\nОно начнется через ",
             )
             if event.datetime.hour == (now + datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=30)).minute:
+                embed.description += f"30 минут!\n[Покажи мне событие]({event.url})"
                 for user in event.members:
-                    await user.send(
-                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
-                        "Оно начинается через 30 минут!", embeds=embed)
+                    await user.send(embeds=embed)
             elif event.datetime.hour == (now + datetime.timedelta(minutes=15)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=15)).minute:
+                embed.description += f"15 минут!\n[Покажи мне событие]({event.url})"
                 for user in event.members:
-                    await user.send(
-                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
-                        "Оно начинается через 15 минут!", embeds=embed)
+                    await user.send(embeds=embed)
             elif event.datetime.hour == (now + datetime.timedelta(minutes=5)).hour and event.datetime.minute == (
                     now + datetime.timedelta(minutes=5)).minute:
+                embed.description += f"5 минут!\n[Покажи мне событие]({event.url})"
                 for user in event.members:
-                    await user.send(
-                        f'Вы записаны на мероприятие {event.name} которое пройдет {event.datetime}. '
-                        "Оно начинается через 5 минут!", embeds=embed)
+                    await user.send(embeds=embed)
             elif event.datetime.hour == (now - datetime.timedelta(minutes=30)).hour and event.datetime.minute == (
                     now - datetime.timedelta(minutes=30)).minute:
                 message = await event.channel.get_message(event.id)
@@ -223,143 +229,137 @@ def member_activity(ctx: interactions.CommandContext, field_number: int):
     fields = [4, 5, 6]
     fields.remove(field_number)
     if nick_user is None:
-        logger.default_log(f"User {ctx.user.id} not found")
+        logger.default_log(f"User {ctx.user.mention} not found")
         if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]):
-            footer_text = embed.footer.text.split('\n')
-            footer_text[0] += ctx.member.name + ", "
-            embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+            if ctx.member.name not in embed.footer.text:
+                embed.footer.text += ctx.member.name + ", "
         else:
-            embed.fields[field_number].value += ctx.member.name + ", "
+            embed.fields[field_number].value += ctx.user.mention + ", "
             embed.fields[3].value = str(int(embed.fields[3].value[0]) + 1) + embed.fields[3].value[1:]
         users[ctx.user.id] = ctx.member.name
-        logger.default_log(f"User {ctx.user.id}: {ctx.member.name} created and subscribed")
+        logger.default_log(f"User {ctx.user.mention} created and subscribed")
         for event in events:
             if event.id == ctx.message.id:
                 print("Member added to event")
                 event.members.append(ctx.user)
-    elif nick_user in embed.fields[field_number].value.split(",") or nick_user == embed.fields[field_number].value[
-                                                                                  1:-1]:
-        embed.fields[field_number].value = embed.fields[field_number].value.replace(nick_user + ",", '')
+    elif ctx.user.mention in embed.fields[field_number].value.split(",") or \
+            ctx.user.mention == embed.fields[field_number].value[1:-1]:
+        embed.fields[field_number].value = embed.fields[field_number].value.replace(ctx.user.mention + ",", '')
         embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
         for event in events:
             if event.id == ctx.message.id:
                 print("Member removed from event")
                 event.members.remove(ctx.user)
-        logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
+        logger.default_log(f"User {ctx.user.mention} unsubscribed")
     else:
-        if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]) and nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
-            if nick_user not in embed.footer.text.split('\n')[0]:
-                footer_text = embed.footer.text.split('\n')
-                footer_text[1] = footer_text[1].replace(nick_user + ",", '')
-                footer_text[0] += ctx.member.name + ", "
-                embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+        if int(embed.fields[3].value[0]) == int(embed.fields[3].value[2]) and \
+                ctx.user.mention not in embed.fields[fields[0]].value and \
+                ctx.user.mention not in embed.fields[fields[1]].value:
+            if ctx.user.mention not in embed.footer.text:
+                if ctx.member.name not in embed.footer.text:
+                    embed.footer.text += nick_user + ", "
         else:
-            if nick_user not in embed.fields[fields[0]].value and nick_user not in embed.fields[fields[1]].value:
+            if ctx.user.mention not in embed.fields[fields[0]].value and \
+                    ctx.user.mention not in embed.fields[fields[1]].value:
                 embed.fields[3].value = str(int(embed.fields[3].value[0]) + 1) + embed.fields[3].value[1:]
-            embed.fields[field_number].value += ctx.member.name + ","
-            embed.fields[fields[0]].value = embed.fields[fields[0]].value.replace(nick_user + ",", '')
-            embed.fields[fields[1]].value = embed.fields[fields[1]].value.replace(nick_user + ",", '')
-            footer_text = embed.footer.text.split('\n')
-            footer_text[0] = footer_text[0].replace(nick_user + ",", '')
-            footer_text[1] = footer_text[1].replace(nick_user + ",", '')
-            embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+            embed.fields[field_number].value += ctx.user.mention + ","
+            embed.fields[fields[0]].value = embed.fields[fields[0]].value.replace(ctx.user.mention + ",", '')
+            embed.fields[fields[1]].value = embed.fields[fields[1]].value.replace(ctx.user.mention + ",", '')
+            embed.footer.text = embed.footer.text.replace(nick_user + ",", '')
         users[ctx.user.id] = ctx.member.name
         for event in events:
             if event.id == ctx.message.id:
                 if ctx.user not in event.members:
                     print("Member added to event")
                     event.members.append(ctx.user)
-        logger.default_log(f"User {ctx.member.name}:{ctx.user.id} subscribed")
+        logger.default_log(f"User {ctx.user.mention} subscribed")
     return embed
 
 
-def secondary_activity(ctx: interactions.CommandContext, field_number: int):
+def secondary_activity(ctx: interactions.CommandContext):
     embed = ctx.message.embeds[0]
     nick_user = users.get(ctx.user.id)
-    footer_text = embed.footer.text.split('\n')
     if nick_user is None:
         logger.default_log(f"User {ctx.user.id} not found")
-        footer_text[field_number] += ctx.member.name + ","
+        embed.footer.text += ctx.member.name + ","
         users[ctx.user.id] = ctx.member.name
-        logger.default_log(f"User {ctx.member.name}:{ctx.user.id} created and subscribed")
+        logger.default_log(f"User {ctx.user.mention} created and subscribed")
         for event in events:
             if event.id == ctx.message.id:
                 print("Member added to event")
                 event.members.append(ctx.user)
-    elif nick_user in footer_text[field_number]:
-        footer_text[field_number] = footer_text[field_number].replace(nick_user + ",", '')
+    elif nick_user in embed.footer.text:
+        embed.footer.text = embed.footer.text.replace(nick_user + ",", '')
         for event in events:
             if event.id == ctx.message.id:
                 print("Member removed from event")
                 event.members.remove(ctx.user)
-        logger.default_log(f"User {ctx.member.name}:{ctx.user.id} unsubscribed")
+        logger.default_log(f"User {ctx.user.mention} unsubscribed")
     else:
-        footer_text[field_number] += ctx.member.name + ","
-        if nick_user in (embed.fields[4].value[1:] + 'a').split(',') + (embed.fields[5].value[1:] + 'a').split(',') + (
+        embed.footer.text += ctx.member.name + ","
+        if ctx.user.mention in (embed.fields[4].value[1:] + 'a').split(',') + (embed.fields[5].value[1:] + 'a').split(
+                ',') + (
                 embed.fields[6].value[1:] + 'a').split(','):
-            embed.fields[4].value = embed.fields[4].value.replace(nick_user + ",", '')
-            embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
-            embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
+            embed.fields[4].value = embed.fields[4].value.replace(ctx.user.mention + ",", '')
+            embed.fields[5].value = embed.fields[5].value.replace(ctx.user.mention + ",", '')
+            embed.fields[6].value = embed.fields[6].value.replace(ctx.user.mention + ",", '')
             embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
-        footer_text[1 - field_number] = footer_text[1 - field_number].replace(nick_user + ",", '')
         users[ctx.user.id] = ctx.member.name
         for event in events:
             if event.id == ctx.message.id:
                 if ctx.user not in event.members:
                     print("Member added to event")
                     event.members.append(ctx.user)
-        logger.default_log(f"User {ctx.member.name}:{ctx.user.id} subscribed")
-    embed.footer.text = footer_text[0] + "\n" + footer_text[1]
+        logger.default_log(f"User {ctx.user.mention} subscribed")
     return embed
 
 
 @bot.component("BtnTitan")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"Titan pressed by {ctx.user.username}:{ctx.user.id}")
+    logger.default_log(f"Titan pressed by {ctx.user.mention}")
     await ctx.message.edit(embeds=member_activity(ctx, 4), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
 @bot.component("BtnHunter")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"Hunter pressed by {ctx.user.username}:{ctx.user.id}")
+    logger.default_log(f"Hunter pressed by {ctx.user.mention}")
     await ctx.message.edit(embeds=member_activity(ctx, 5), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
 @bot.component("BtnWarlock")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"Warlock pressed by {ctx.user.username}:{ctx.user.id}")
+    logger.default_log(f"Warlock pressed by {ctx.user.mention}")
     await ctx.message.edit(embeds=member_activity(ctx, 6), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
-@bot.component("BtnLate")
+@bot.component("BtnReserve")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"Late pressed by {ctx.user.username}:{ctx.user.id}")
-    await ctx.message.edit(embeds=secondary_activity(ctx, 1), components=ctx.message.components)
+    logger.default_log(f"Reserve pressed by {ctx.user.mention}")
+    await ctx.message.edit(embeds=secondary_activity(ctx), components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
 @bot.component("BtnExit")
 async def response(ctx: interactions.CommandContext):
-    logger.default_log(f"Exit pressed by {ctx.user.username}:{ctx.user.id}")
+    logger.default_log(f"Exit pressed by {ctx.user.mention}")
     embed = ctx.message.embeds[0]
     nick_user = users.get(ctx.user.id)
-    embed.fields[4].value = embed.fields[4].value.replace(nick_user + ",", '')
-    embed.fields[5].value = embed.fields[5].value.replace(nick_user + ",", '')
-    embed.fields[6].value = embed.fields[6].value.replace(nick_user + ",", '')
-    if nick_user not in embed.footer.text:
-        embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
-    footer_text = embed.footer.text.split('\n')
-    footer_text[0] = footer_text[0].replace(nick_user + ",", '')
-    footer_text[1] = footer_text[1].replace(nick_user + ",", '')
-    embed.footer.text = footer_text[0] + "\n" + footer_text[1]
-    for event in events:
-        if event.id == ctx.message.id:
-            print("Member removed from event")
-            event.members.remove(ctx.user)
-    await ctx.message.edit(embeds=embed, components=ctx.message.components)
+    if ctx.user.mention in (embed.fields[4].value[1:] + 'a').split(',') + (embed.fields[5].value[1:] + 'a').split(
+            ',') + (embed.fields[6].value[1:] + 'a').split(',') or nick_user in embed.footer.text:
+        embed.fields[4].value = embed.fields[4].value.replace(ctx.user.mention + ",", '')
+        embed.fields[5].value = embed.fields[5].value.replace(ctx.user.mention + ",", '')
+        embed.fields[6].value = embed.fields[6].value.replace(ctx.user.mention + ",", '')
+        if nick_user not in embed.footer.text:
+            embed.fields[3].value = str(int(embed.fields[3].value[0]) - 1) + embed.fields[3].value[1:]
+        embed.footer.text = embed.footer.text.replace(nick_user + ",", '')
+        for event in events:
+            if event.id == ctx.message.id:
+                print("Member removed from event")
+                event.members.remove(ctx.user)
+        await ctx.message.edit(embeds=embed, components=ctx.message.components)
     await ctx.send("Успешно", ephemeral=True)
 
 
