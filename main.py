@@ -2,8 +2,9 @@
 import os
 import re
 import sys
-# import interactions
 import json
+import time
+
 import logger
 from Event import *
 from interactions.ext.tasks import IntervalTrigger, create_task
@@ -187,7 +188,7 @@ async def create_response(ctx: interactions.CommandContext, meet_name: str, meet
 
 
 async def events_handler():
-    logger.default_log("Meetings time check started")
+    # logger.default_log("Meetings time check started")
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3, minutes=0)
     for event in events:
         if event.datetime.year == now.year and event.datetime.month == now.month and event.datetime.day == now.day:
@@ -220,7 +221,7 @@ async def events_handler():
                 await message.delete("Times out")
                 events.remove(event)
                 logger.default_log(f"Event {event.name}:{event.id} deleted")
-    logger.default_log("Meetings time check ended")
+    # logger.default_log("Meetings time check ended")
 
 
 def member_activity(ctx: interactions.CommandContext, field_number: int):
@@ -369,9 +370,16 @@ async def main_loop():
 
 
 @bot.event
-async def on_ready():
+async def on_start():
     logger.default_log(f"Bot logged as {bot.me.name}")
     main_loop.start()
 
-
-bot.start()
+while True:
+    try:
+        bot.start()
+        logger.default_log(f"Bot relogged")
+    except KeyboardInterrupt:
+        break  # Не срабатывает
+    except:
+        logger.default_log(f"Ошибка сети! Попытка переподключения через {config['reconnect_time']} секунд")
+        time.sleep(int(config['reconnect_time']))
